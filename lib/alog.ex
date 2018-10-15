@@ -7,13 +7,12 @@ defmodule Alog do
 
   At the top of the schema you wish to use append only functions for, `use` this module:
 
-      `use Alog`
+      use Alog
 
   The append only functions will then be available to call as part of your schema.
 
   ## Example
 
-      ```
       defmodule MyApp.User do
         use Ecto.Schema
         use Alog
@@ -28,7 +27,6 @@ defmodule Alog do
           ...
         end
       end
-      ```
 
   Alog expects your `Repo` to belong to the same base module as the schema.
   So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
