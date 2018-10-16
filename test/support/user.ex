@@ -1,4 +1,4 @@
-defmodule TestApp.User do
+defmodule Alog.TestApp.User do
   use Ecto.Schema
   use Alog
   import Ecto.Changeset
