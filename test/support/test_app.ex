@@ -1,2 +1,2 @@
-defmodule TestApp do
+defmodule Alog.TestApp do
 end

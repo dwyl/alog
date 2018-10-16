@@ -1,4 +1,4 @@
-defmodule TestApp.DataCase do
+defmodule Alog.TestApp.DataCase do
   @moduledoc """
   This module defines the setup for tests requiring
   access to the application's data layer.
@@ -16,20 +16,20 @@ defmodule TestApp.DataCase do
 
   using do
     quote do
-      alias TestApp.Repo
+      alias Alog.Repo
 
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      import TestApp.DataCase
+      import Alog.TestApp.DataCase
     end
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(TestApp.Repo)
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Alog.Repo)
 
     unless tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(TestApp.Repo, {:shared, self()})
+      Ecto.Adapters.SQL.Sandbox.mode(Alog.Repo, {:shared, self()})
     end
 
     :ok

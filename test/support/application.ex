@@ -1,4 +1,4 @@
-defmodule TestApp.Application do
+defmodule Alog.TestApp.Application do
   @moduledoc false
   use Application
 
@@ -6,15 +6,15 @@ defmodule TestApp.Application do
     import Supervisor.Spec
 
     children =
-      case Code.ensure_compiled(TestApp) do
+      case Code.ensure_compiled(Alog.TestApp) do
         {:error, _} ->
           []
 
-        {:module, TestApp} ->
-          [supervisor(TestApp.Repo, [])]
+        {:module, Alog.TestApp} ->
+          [supervisor(Alog.Repo, [])]
       end
 
-    opts = [strategy: :one_for_one, name: TestApp.Supervisor]
+    opts = [strategy: :one_for_one, name: Alog.TestApp.Supervisor]
     Supervisor.start_link(children, opts)
   end
 end

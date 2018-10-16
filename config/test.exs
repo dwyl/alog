@@ -1,6 +1,6 @@
 use Mix.Config
 
-config :test_app, TestApp.Repo,
+config :alog, Alog.Repo,
   adapter: Ecto.Adapters.Postgres,
   username: "postgres",
   password: "postgres",
@@ -9,4 +9,4 @@ config :test_app, TestApp.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   priv: "priv/repo/test_app/"
 
-config :test_app, ecto_repos: [TestApp.Repo]
+config :alog, ecto_repos: [Alog.Repo]

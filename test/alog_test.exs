@@ -1,8 +1,8 @@
 defmodule AlogTest do
-  use TestApp.DataCase
+  use Alog.TestApp.DataCase
   doctest Alog
 
-  alias TestApp.User
+  alias Alog.TestApp.User
 
   describe "insert/1:" do
     test "succeeds" do
