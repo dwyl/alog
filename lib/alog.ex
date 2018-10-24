@@ -53,6 +53,28 @@ defmodule Alog do
 
       @repo __MODULE__ |> Module.split() |> List.first() |> Module.concat("Repo")
 
+      if not Map.has_key?(%__MODULE__{}, :deleted) || not is_boolean(%__MODULE__{}.deleted) do
+        raise """
+
+        Your Schema must have a key :deleted, with type :boolean and default false.
+
+        Add the following line to your schema:
+
+            field(:deleted, :boolean, default: false)
+        """
+      end
+
+      if not Map.has_key?(%__MODULE__{}, :entry_id) do
+        raise """
+
+        Your Schema must have a key :entry_id, with type :string
+
+        Add the following line to your schema:
+
+            field(:entry_id, :string)
+        """
+      end
+
       @doc """
       Applies a schema's changeset function and inserts it into the database.
       Adds an entry id to link it to future updates of the item.
