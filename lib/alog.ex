@@ -30,6 +30,12 @@ defmodule Alog do
 
   Alog expects your `Repo` to belong to the same base module as the schema.
   So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
+
+  Any schema that uses Alog must include the fields `:deleted` of type `:boolean` and default false,
+  and `:entry_id` of type `:string`.
+
+        field(:deleted, :boolean, default: false)
+        field(:entry_id, :string)
   """
 
   @callback insert(struct) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
@@ -52,6 +58,28 @@ defmodule Alog do
       import Ecto.Query, only: [from: 2, subquery: 1]
 
       @repo __MODULE__ |> Module.split() |> List.first() |> Module.concat("Repo")
+
+      if not Map.has_key?(%__MODULE__{}, :deleted) || not is_boolean(%__MODULE__{}.deleted) do
+        raise """
+
+        Your Schema must have a key :deleted, with type :boolean and default false.
+
+        Add the following line to your schema:
+
+            field(:deleted, :boolean, default: false)
+        """
+      end
+
+      if not Map.has_key?(%__MODULE__{}, :entry_id) do
+        raise """
+
+        Your Schema must have a key :entry_id, with type :string
+
+        Add the following line to your schema:
+
+            field(:entry_id, :string)
+        """
+      end
 
       @doc """
       Applies a schema's changeset function and inserts it into the database.

@@ -83,4 +83,64 @@ defmodule AlogTest do
       assert length(User.all()) == 0
     end
   end
+
+  describe "required fields" do
+    test "schema without delete field raises error" do
+      assert_raise RuntimeError, fn ->
+        defmodule BadSchema do
+          use Ecto.Schema
+          use Alog
+
+          schema "bad_schema" do
+            field(:entry_id, :string)
+            timestamps()
+          end
+        end
+      end
+    end
+
+    test "schema without entry_id field raises error" do
+      assert_raise RuntimeError, fn ->
+        defmodule BadSchema do
+          use Ecto.Schema
+          use Alog
+
+          schema "bad_schema" do
+            field(:deleted, :boolean, default: false)
+            timestamps()
+          end
+        end
+      end
+    end
+
+    test "schema with deleted field of wrong type raises error" do
+      assert_raise RuntimeError, fn ->
+        defmodule BadSchema do
+          use Ecto.Schema
+          use Alog
+
+          schema "bad_schema" do
+            field(:entry_id, :string)
+            field(:deleted, :string)
+            timestamps()
+          end
+        end
+      end
+    end
+
+    test "both required fields do not raise error" do
+      assert (fn ->
+                defmodule BadSchema do
+                  use Ecto.Schema
+                  use Alog
+
+                  schema "bad_schema" do
+                    field(:entry_id, :string)
+                    field(:deleted, :boolean, default: false)
+                    timestamps()
+                  end
+                end
+              end).()
+    end
+  end
 end
