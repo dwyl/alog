@@ -32,13 +32,15 @@ defmodule Alog do
   So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
   """
 
-  @callback insert(struct) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  @callback insert(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback get(String.t()) :: Ecto.Schema.t() | nil | no_return()
-  @callback get_by(Keyword.t() | map) :: Ecto.Schema.t() | nil | no_return()
-  @callback update(Ecto.Schema.t(), struct) ::
+  @callback get_by(Keyword.t() | map()) :: Ecto.Schema.t() | nil | no_return()
+  @callback update(Ecto.Schema.t(), map()) ::
               {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback get_history(Ecto.Schema.t()) :: [Ecto.Schema.t()] | no_return()
   @callback delete(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  @callback preload(Ecto.Schema.t() | list(Ecto.Schema.t()), atom() | list()) ::
+              Ecto.Schema.t() | list(Ecto.Schema.t())
 
   defmacro __using__(_opts) do
     quote location: :keep do
@@ -48,7 +50,7 @@ defmodule Alog do
   end
 
   defmacro __before_compile__(_env) do
-    quote generated: true do
+    quote generated: true, location: :keep do
       import Ecto.Query, only: [from: 2, subquery: 1]
 
       @repo __MODULE__ |> Module.split() |> List.first() |> Module.concat("Repo")
@@ -183,6 +185,60 @@ defmodule Alog do
         |> Map.put(:updated_at, nil)
         |> __MODULE__.changeset(%{deleted: true})
         |> @repo.insert()
+      end
+
+      @doc """
+      Preloads an item's (or list of items') association.
+
+          User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
+          |> User.preload(:friends)
+      """
+      def preload(item, assoc) do
+        @repo.preload(item, [{assoc, preload_query(assoc)}])
+      end
+
+      @doc """
+      Preloads an item's (or list of items') multiple associations.
+      Also recursively preloads any nested associations.
+
+          # Load all of a user's friends and comments
+          User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
+          |> User.preload([:friends, :comments])
+
+          # Load all of a user's friends, and all of their friends' comments
+          User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
+          |> User.preload([friends: [:comments]])
+      """
+      def preload(item, assocs) when is_list(assocs) do
+        @repo.preload(
+          item,
+          Enum.map(assocs, fn a ->
+            preload_map(a, __MODULE__)
+          end)
+        )
+      end
+
+      defp preload_map(assoc, owner) do
+        case assoc do
+          {k, v} ->
+            assoc_module = owner.__schema__(:association, k).queryable
+            {k, {preload_query(k, owner), Enum.map(v, fn a -> preload_map(a, assoc_module) end)}}
+
+          k ->
+            {k, preload_query(k, owner)}
+        end
+      end
+
+      @doc false
+      def preload_query(assoc, module \\ __MODULE__) do
+        sub =
+          from(mod in Map.get(module.__schema__(:association, assoc), :queryable),
+            distinct: mod.entry_id,
+            order_by: [desc: :inserted_at],
+            select: mod
+          )
+
+        from(m in subquery(sub), where: not m.deleted, select: m)
       end
 
       defp insert_entry_id(entry) do
