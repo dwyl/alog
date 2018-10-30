@@ -188,18 +188,8 @@ defmodule Alog do
       end
 
       @doc """
-      Preloads an item's (or list of items') association.
-
-          User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
-          |> User.preload(:friends)
-      """
-      def preload(item, assoc) do
-        @repo.preload(item, [{assoc, preload_query(assoc)}])
-      end
-
-      @doc """
       Preloads an item's (or list of items') multiple associations.
-      Also recursively preloads any nested associations.
+      Also preloads any nested associations.
 
           # Load all of a user's friends and comments
           User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
@@ -216,6 +206,16 @@ defmodule Alog do
             preload_map(a, __MODULE__)
           end)
         )
+      end
+
+      @doc """
+      Preloads an item's (or list of items') association.
+
+          User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
+          |> User.preload(:friends)
+      """
+      def preload(item, assoc) do
+        @repo.preload(item, [{assoc, preload_query(assoc)}])
       end
 
       defp preload_map(assoc, owner) do
