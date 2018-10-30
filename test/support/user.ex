@@ -10,6 +10,8 @@ defmodule Alog.TestApp.User do
     field(:entry_id, :string)
     field(:deleted, :boolean, default: false)
 
+    has_many(:items, Alog.TestApp.Item, foreign_key: :owner)
+
     timestamps()
   end
 

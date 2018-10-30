@@ -10,3 +10,8 @@ config :alog, Alog.Repo,
   priv: "priv/repo/test_app/"
 
 config :alog, ecto_repos: [Alog.Repo]
+
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id],
+  level: :warn
