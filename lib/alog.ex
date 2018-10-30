@@ -51,7 +51,8 @@ defmodule Alog do
 
   defmacro __before_compile__(_env) do
     quote generated: true, location: :keep do
-      import Ecto.Query, only: [from: 2, subquery: 1]
+      import Ecto.Query
+      import Ecto.Query.API, only: [field: 2]
 
       @repo __MODULE__ |> Module.split() |> List.first() |> Module.concat("Repo")
 
@@ -113,9 +114,25 @@ defmodule Alog do
 
       @doc """
       Gets an item from the database that matches the given clause.
+
+          User.get_by(username: "admin")
+          User.get_by(first_name: "Charlie", age: 27)
       """
       def get_by(clauses) do
-        @repo.get_by(__MODULE__, clauses)
+        sub =
+          __MODULE__
+          |> (fn q ->
+                Enum.reduce(clauses, q, fn {key, value}, q ->
+                  q |> where([m], field(m, ^key) == ^value)
+                end)
+              end).()
+          |> order_by([m], desc: m.inserted_at)
+          |> limit([m], 1)
+          |> select([m], m)
+
+        query = from(m in subquery(sub), where: not m.deleted, select: m)
+
+        item = @repo.one(query)
       end
 
       @doc """

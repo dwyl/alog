@@ -84,6 +84,22 @@ defmodule AlogTest do
     end
   end
 
+  describe "get_by/2:" do
+    test "only returns one result" do
+      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      {:ok, user_2} = User.insert(%{name: "Loki", username: "mschfmkr", postcode: "E2 0SY"})
+
+      assert User.get_by(postcode: "E2 0SY") == user_2
+    end
+
+    test "works with multiple clauses" do
+      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      {:ok, user_2} = User.insert(%{name: "Loki", username: "mschfmkr", postcode: "E2 0SY"})
+
+      assert User.get_by(postcode: "E2 0SY", name: "Thor") == user
+    end
+  end
+
   describe "required fields" do
     test "schema without delete field raises error" do
       assert_raise RuntimeError, fn ->
