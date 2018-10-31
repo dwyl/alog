@@ -2,7 +2,7 @@ defmodule AlogTest do
   use Alog.TestApp.DataCase
   doctest Alog
 
-  alias Alog.TestApp.User
+  alias Alog.TestApp.{User, Item, Helpers}
 
   describe "insert/1:" do
     test "succeeds" do
@@ -33,7 +33,7 @@ defmodule AlogTest do
       {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
       {:ok, updated_user} = User.update(user, %{postcode: "W2 3EC"})
 
-      assert User.get(user.entry_id) == updated_user
+      assert User.get(user.entry_id) |> User.preload(:items) == updated_user
     end
   end
 
@@ -87,7 +87,7 @@ defmodule AlogTest do
   describe "required fields" do
     test "schema without delete field raises error" do
       assert_raise RuntimeError, fn ->
-        defmodule BadSchema do
+        defmodule NoDeleteSchema do
           use Ecto.Schema
           use Alog
 
@@ -101,7 +101,7 @@ defmodule AlogTest do
 
     test "schema without entry_id field raises error" do
       assert_raise RuntimeError, fn ->
-        defmodule BadSchema do
+        defmodule NoEntrySchema do
           use Ecto.Schema
           use Alog
 
@@ -115,7 +115,7 @@ defmodule AlogTest do
 
     test "schema with deleted field of wrong type raises error" do
       assert_raise RuntimeError, fn ->
-        defmodule BadSchema do
+        defmodule BadDeletedSchema do
           use Ecto.Schema
           use Alog
 
@@ -130,7 +130,7 @@ defmodule AlogTest do
 
     test "both required fields do not raise error" do
       assert (fn ->
-                defmodule BadSchema do
+                defmodule GoodSchema do
                   use Ecto.Schema
                   use Alog
 
@@ -141,6 +141,78 @@ defmodule AlogTest do
                   end
                 end
               end).()
+    end
+  end
+
+  describe "preload/2:" do
+    test "preloads many_to_many associations" do
+      {:ok, _, item} = Helpers.seed_data()
+
+      # item types are not loaded by default
+      assert_raise ArgumentError, fn ->
+        item.entry_id
+        |> Item.get()
+        |> Map.get(:item_types)
+        |> length()
+      end
+
+      assert item.entry_id
+             |> Item.get()
+             |> Item.preload(:item_types)
+             |> Map.get(:item_types)
+             |> length() == 1
+    end
+
+    test "preloads one_to_many associations" do
+      {:ok, user, _} = Helpers.seed_data()
+
+      # items are not loaded by default
+      assert_raise ArgumentError, fn ->
+        user.entry_id
+        |> User.get()
+        |> Map.get(:items)
+        |> length()
+      end
+
+      assert user.entry_id
+             |> User.get()
+             |> User.preload(:items)
+             |> Map.get(:items)
+             |> length() == 1
+    end
+
+    test "preloads nested associations" do
+      {:ok, user, item} = Helpers.seed_data()
+
+      # item_types are not loaded by default
+      assert_raise ArgumentError, fn ->
+        item.entry_id
+        |> Item.get()
+        |> Map.get(:item_types)
+        |> length()
+      end
+
+      assert user.entry_id
+             |> User.get()
+             |> User.preload(items: [:item_types])
+             |> Map.get(:items)
+             |> List.first()
+             |> Map.get(:item_types)
+             |> length() == 1
+    end
+
+    test "preloads two level deep nested associations" do
+      {:ok, user, _} = Helpers.seed_data()
+
+      assert user.entry_id
+             |> User.get()
+             |> User.preload(items: [item_types: [:items]])
+             |> Map.get(:items)
+             |> List.first()
+             |> Map.get(:item_types)
+             |> List.first()
+             |> Map.get(:items)
+             |> length() == 2
     end
   end
 end
