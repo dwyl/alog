@@ -206,7 +206,7 @@ defmodule Alog do
 
       @doc """
       Preloads an item's (or list of items') multiple associations.
-      Also recursively preloads any nested associations.
+      Also preloads any nested associations.
 
           # Load all of a user's friends and comments
           User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
