@@ -30,6 +30,12 @@ defmodule Alog do
 
   Alog expects your `Repo` to belong to the same base module as the schema.
   So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
+
+  Any schema that uses Alog must include the fields `:deleted` of type `:boolean` and default false,
+  and `:entry_id` of type `:string`.
+
+        field(:deleted, :boolean, default: false)
+        field(:entry_id, :string)
   """
 
   @callback insert(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
