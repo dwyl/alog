@@ -38,13 +38,14 @@ defmodule Alog do
         field(:entry_id, :string)
   """
 
-  @callback insert(map()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  @callback insert(Ecto.Schema.t() | Ecto.Changeset.t()) ::
+              {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback get(String.t()) :: Ecto.Schema.t() | nil | no_return()
   @callback get_by(Keyword.t() | map()) :: Ecto.Schema.t() | nil | no_return()
-  @callback update(Ecto.Schema.t(), map()) ::
-              {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  @callback update(Ecto.Changeset.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback get_history(Ecto.Schema.t()) :: [Ecto.Schema.t()] | no_return()
-  @callback delete(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  @callback delete(Ecto.Schema.t() | Ecto.Changeset.t()) ::
+              {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback preload(Ecto.Schema.t() | list(Ecto.Schema.t()), atom() | list()) ::
               Ecto.Schema.t() | list(Ecto.Schema.t())
 
@@ -85,15 +86,19 @@ defmodule Alog do
       end
 
       @doc """
-      Applies a schema's changeset function and inserts it into the database.
+      Inserts a struct made with a schema or a changeset into the database.
       Adds an entry id to link it to future updates of the item.
 
-          User.insert(attributes)
+          %User{name: "username", age: "25"}
+          |> User.insert()
+
+          %User{}
+          |> User.changeset(%{name: "username", age: "25"})
+          |> User.insert()
       """
-      def insert(attrs) do
-        %__MODULE__{}
+      def insert(struct_or_changeset) do
+        struct_or_changeset
         |> insert_entry_id()
-        |> __MODULE__.changeset(attrs)
         |> @repo.insert()
       end
 
@@ -145,18 +150,28 @@ defmodule Alog do
       Updates an item in the database.
       Copies the current row, updates the relevant fields and appends
       it to the database table.
+      Requires a changeset to be given.
 
           User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
-          |> User.update(%{age: 44})
+          |> User.changeset(%{age: 44})
+          |> User.update()
       """
-      def update(%__MODULE__{} = item, attrs) do
-        item
-        |> @repo.preload(__MODULE__.__schema__(:associations))
-        |> Map.put(:id, nil)
-        |> Map.put(:inserted_at, nil)
-        |> Map.put(:updated_at, nil)
-        |> __MODULE__.changeset(attrs)
+      def update(%Ecto.Changeset{} = changeset) do
+        data =
+          changeset
+          |> Map.get(:data)
+          |> Map.put(:id, nil)
+          |> Map.put(:inserted_at, nil)
+          |> Map.put(:updated_at, nil)
+          |> @repo.preload(__MODULE__.__schema__(:associations))
+
+        changeset
+        |> Map.put(:data, data)
         |> @repo.insert()
+      end
+
+      def update(_) do
+        raise ArgumentError, "The argument provided to update/1 must be an Ecto.Changeset"
       end
 
       @doc """
@@ -199,15 +214,21 @@ defmodule Alog do
 
           User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
           |> User.delete()
+
+          User.get("5ds4fg31-a7f1-2hd8-x56a-d4s3g7ded1vv2")
+          |> User.changeset(%{})
+          |> User.delete()
       """
-      def delete(item) do
-        item
-        |> @repo.preload(__MODULE__.__schema__(:associations))
-        |> Map.put(:id, nil)
-        |> Map.put(:inserted_at, nil)
-        |> Map.put(:updated_at, nil)
-        |> __MODULE__.changeset(%{deleted: true})
-        |> @repo.insert()
+      def delete(%Ecto.Changeset{} = changeset) do
+        changeset
+        |> Ecto.Changeset.put_change(:deleted, true)
+        |> update()
+      end
+
+      def delete(%__MODULE__{} = entry) do
+        entry
+        |> Ecto.Changeset.cast(%{deleted: true}, [:deleted])
+        |> update()
       end
 
       @doc """
@@ -264,7 +285,17 @@ defmodule Alog do
         from(m in subquery(sub), where: not m.deleted, select: m)
       end
 
-      defp insert_entry_id(entry) do
+      defp insert_entry_id(%Ecto.Changeset{} = entry) do
+        with {:ok, nil} <- Map.fetch(entry.data, :entry_id),
+             nil <- get_change(entry, :entry_id) do
+          put_change(entry, :entry_id, Ecto.UUID.generate())
+        else
+          _ ->
+            entry
+        end
+      end
+
+      defp insert_entry_id(%__MODULE__{} = entry) do
         case Map.fetch(entry, :entry_id) do
           {:ok, nil} -> %{entry | entry_id: Ecto.UUID.generate()}
           _ -> entry

@@ -3,15 +3,18 @@ defmodule Alog.TestApp.Helpers do
   alias Alog.Repo
 
   def seed_data() do
-    {:ok, item_type} = ItemType.insert(%{type: "Weapon"})
+    {:ok, item_type} = %ItemType{} |> ItemType.changeset(%{type: "Weapon"}) |> ItemType.insert()
 
-    {:ok, item} = Item.insert(%{name: "Mjolnir"})
-    {:ok, item_2} = Item.insert(%{name: "Staff"})
+    {:ok, item} = %Item{} |> Item.changeset(%{name: "Mjolnir"}) |> Item.insert()
+    {:ok, item_2} = %Item{} |> Item.changeset(%{name: "Staff"}) |> Item.insert()
 
     {:ok, item} = add_type_to_item(item, item_type)
     {:ok, _item_2} = add_type_to_item(item_2, item_type)
 
-    {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+    {:ok, user} =
+      %User{}
+      |> User.changeset(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      |> User.insert()
 
     {:ok, user} = add_item_to_user(user, item)
 

@@ -4,20 +4,39 @@ defmodule AlogTest do
 
   alias Alog.TestApp.{User, Item, Helpers}
 
-  describe "insert/1:" do
+  @user_1_params %{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"}
+  @user_2_params %{name: "Loki", username: "mschfmkr", postcode: "E1 6DR"}
+
+  describe "insert/1 - with changeset:" do
     test "succeeds" do
-      assert {:ok, user} =
-               User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      assert {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
     end
 
     test "validates required fields" do
-      {:error, changeset} = User.insert(%{name: "Thor"})
+      {:error, changeset} =
+        %User{}
+        |> User.changeset(%{name: "Thor"})
+        |> User.insert()
 
       assert length(changeset.errors) > 0
     end
 
     test "inserted user is available" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+
+      assert User.get(user.entry_id) == user
+    end
+  end
+
+  describe "insert/1 - with struct:" do
+    test "succeeds" do
+      {:ok, user} = struct(User, @user_1_params) |> User.insert()
+
+      assert User.get(user.entry_id) == user
+    end
+
+    test "inserted user is available" do
+      {:ok, user} = struct(User, @user_1_params) |> User.insert()
 
       assert User.get(user.entry_id) == user
     end
@@ -25,22 +44,33 @@ defmodule AlogTest do
 
   describe "update/2:" do
     test "succeeds" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      assert {:ok, updated_user} = User.update(user, %{postcode: "W2 3EC"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+
+      assert {:ok, updated_user} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
+    end
+
+    test "updates" do
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+
+      {:ok, updated_user} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
+
+      assert updated_user.postcode == "W2 3EC"
     end
 
     test "'get' returns most recently updated item" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      {:ok, updated_user} = User.update(user, %{postcode: "W2 3EC"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+
+      {:ok, updated_user} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
 
       assert User.get(user.entry_id) |> User.preload(:items) == updated_user
+      assert User.get(user.entry_id).postcode == "W2 3EC"
     end
   end
 
   describe "get_history/1:" do
     test "gets all items" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      {:ok, updated_user} = User.update(user, %{postcode: "W2 3EC"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      {:ok, updated_user} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
 
       assert length(User.get_history(updated_user)) == 2
     end
@@ -48,16 +78,16 @@ defmodule AlogTest do
 
   describe "all/0:" do
     test "succeeds" do
-      {:ok, _} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      {:ok, _} = User.insert(%{name: "Loki", username: "mschfmkr", postcode: "E1 6DR"})
+      {:ok, _} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      {:ok, _} = %User{} |> User.changeset(@user_2_params) |> User.insert()
 
       assert length(User.all()) == 2
     end
 
     test "does not include old items" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      {:ok, _} = User.insert(%{name: "Loki", username: "mschfmkr", postcode: "E1 6DR"})
-      {:ok, _} = User.update(user, %{postcode: "W2 3EC"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      {:ok, _} = %User{} |> User.changeset(@user_2_params) |> User.insert()
+      {:ok, _} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
 
       assert length(User.all()) == 2
     end
@@ -65,20 +95,41 @@ defmodule AlogTest do
 
   describe "delete/1:" do
     test "succeeds" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
       assert {:ok, _} = User.delete(user)
     end
 
     test "deleted items are not retrieved with 'get'" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
       {:ok, _} = User.delete(user)
 
       assert User.get(user.entry_id) == nil
     end
 
     test "deleted items are not retrieved with 'all'" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
       {:ok, _} = User.delete(user)
+
+      assert length(User.all()) == 0
+    end
+  end
+
+  describe "delete/1 - with changeset:" do
+    test "succeeds" do
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      assert {:ok, _} = user |> User.changeset(%{}) |> User.delete()
+    end
+
+    test "deleted items are not retrieved with 'get'" do
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      {:ok, _} = user |> User.changeset(%{}) |> User.delete()
+
+      assert User.get(user.entry_id) == nil
+    end
+
+    test "deleted items are not retrieved with 'all'" do
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      {:ok, _} = user |> User.changeset(%{}) |> User.delete()
 
       assert length(User.all()) == 0
     end
@@ -86,15 +137,17 @@ defmodule AlogTest do
 
   describe "get_by/2:" do
     test "only returns one result" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      {:ok, user_2} = User.insert(%{name: "Loki", username: "mschfmkr", postcode: "E2 0SY"})
+      {:ok, _user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+
+      {:ok, user_2} =
+        %User{} |> User.changeset(Map.put(@user_2_params, :postcode, "E2 0SY")) |> User.insert()
 
       assert User.get_by(postcode: "E2 0SY") == user_2
     end
 
     test "works with multiple clauses" do
-      {:ok, user} = User.insert(%{name: "Thor", username: "gdofthndr12", postcode: "E2 0SY"})
-      {:ok, user_2} = User.insert(%{name: "Loki", username: "mschfmkr", postcode: "E2 0SY"})
+      {:ok, user} = %User{} |> User.changeset(@user_1_params) |> User.insert()
+      {:ok, _user_2} = %User{} |> User.changeset(@user_2_params) |> User.insert()
 
       assert User.get_by(postcode: "E2 0SY", name: "Thor") == user
     end
