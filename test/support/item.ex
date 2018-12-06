@@ -21,9 +21,11 @@ defmodule Alog.TestApp.Item do
   end
 
   @doc false
-  def changeset(address, attrs) do
-    address
+  def changeset(item, attrs) do
+    item
     |> cast(attrs, [:name])
     |> validate_required([:name])
+    |> cast_assoc(:item_types)
+    |> cast_assoc(:user)
   end
 end

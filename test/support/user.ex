@@ -16,9 +16,16 @@ defmodule Alog.TestApp.User do
   end
 
   @doc false
-  def changeset(address, attrs) do
-    address
+  def changeset(user, attrs) do
+    user
     |> cast(attrs, [:name, :username, :postcode, :deleted])
     |> validate_required([:name, :username, :postcode])
+  end
+
+  def user_and_item_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :username, :postcode, :deleted])
+    |> validate_required([:name, :username, :postcode])
+    |> cast_assoc(:items)
   end
 end

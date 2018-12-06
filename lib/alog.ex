@@ -89,6 +89,10 @@ defmodule Alog do
       Inserts a struct made with a schema or a changeset into the database.
       Adds an entry id to link it to future updates of the item.
 
+      If `cast_assoc` has been used on the changeset before passing it to this function,
+      any nested associations will also be given an `entry_id` before they are
+      inserted into the database.
+
           %User{name: "username", age: "25"}
           |> User.insert()
 
@@ -288,7 +292,9 @@ defmodule Alog do
       defp insert_entry_id(%Ecto.Changeset{} = entry) do
         with {:ok, nil} <- Map.fetch(entry.data, :entry_id),
              nil <- get_change(entry, :entry_id) do
-          put_change(entry, :entry_id, Ecto.UUID.generate())
+          entry
+          |> put_change(:entry_id, Ecto.UUID.generate())
+          |> insert_nested_entry_ids()
         else
           _ ->
             entry
@@ -300,6 +306,24 @@ defmodule Alog do
           {:ok, nil} -> %{entry | entry_id: Ecto.UUID.generate()}
           _ -> entry
         end
+      end
+
+      defp insert_nested_entry_ids(changeset) do
+        assocs = changeset.data.__struct__.__schema__(:associations)
+
+        Enum.reduce(changeset.changes, changeset, fn {k, v}, acc ->
+          if k in assocs do
+            assoc =
+              case v do
+                l when is_list(l) -> Enum.map(l, &insert_entry_id/1)
+                item -> insert_entry_id(item)
+              end
+
+            Ecto.Changeset.put_change(acc, k, assoc)
+          else
+            acc
+          end
+        end)
       end
 
       defoverridable Alog
