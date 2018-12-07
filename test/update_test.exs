@@ -26,5 +26,13 @@ defmodule AlogTest.UpdateTest do
       assert User.get(user.entry_id) |> User.preload(:items) == updated_user
       assert User.get(user.entry_id).postcode == "W2 3EC"
     end
+
+    test "associations remain after update" do
+      {:ok, user, item} = Helpers.seed_data()
+
+      {:ok, updated_user} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
+
+      assert User.get(user.entry_id) |> User.preload(:items) |> Map.get(:items) |> length == 1
+    end
   end
 end

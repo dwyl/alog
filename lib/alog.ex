@@ -164,10 +164,10 @@ defmodule Alog do
         data =
           changeset
           |> Map.get(:data)
+          |> @repo.preload(__MODULE__.__schema__(:associations))
           |> Map.put(:id, nil)
           |> Map.put(:inserted_at, nil)
           |> Map.put(:updated_at, nil)
-          |> @repo.preload(__MODULE__.__schema__(:associations))
 
         changeset
         |> Map.put(:data, data)
