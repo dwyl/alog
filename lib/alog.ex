@@ -101,9 +101,15 @@ defmodule Alog do
           |> User.insert()
       """
       def insert(struct_or_changeset) do
-        struct_or_changeset
-        |> insert_entry_id()
-        |> @repo.insert()
+        case check_for_unique_index() do
+          :ok ->
+            struct_or_changeset
+            |> insert_entry_id()
+            |> @repo.insert()
+
+          {:error, msg} ->
+            raise msg
+        end
       end
 
       @doc """
@@ -161,17 +167,23 @@ defmodule Alog do
           |> User.update()
       """
       def update(%Ecto.Changeset{} = changeset) do
-        data =
-          changeset
-          |> Map.get(:data)
-          |> @repo.preload(__MODULE__.__schema__(:associations))
-          |> Map.put(:id, nil)
-          |> Map.put(:inserted_at, nil)
-          |> Map.put(:updated_at, nil)
+        case check_for_unique_index() do
+          :ok ->
+            data =
+              changeset
+              |> Map.get(:data)
+              |> @repo.preload(__MODULE__.__schema__(:associations))
+              |> Map.put(:id, nil)
+              |> Map.put(:inserted_at, nil)
+              |> Map.put(:updated_at, nil)
 
-        changeset
-        |> Map.put(:data, data)
-        |> @repo.insert()
+            changeset
+            |> Map.put(:data, data)
+            |> @repo.insert()
+
+          {:error, msg} ->
+            raise msg
+        end
       end
 
       def update(_) do
@@ -324,6 +336,34 @@ defmodule Alog do
             acc
           end
         end)
+      end
+
+      defp check_for_unique_index() do
+        table = __MODULE__.__schema__(:source)
+        "Elixir." <> module_name = unquote(__MODULE__) |> to_string()
+
+        case @repo.query(
+               "SELECT * FROM pg_indexes WHERE tablename = $1 and indexname NOT LIKE '%_pkey' AND indexdef LIKE 'CREATE UNIQUE INDEX%';",
+               [table]
+             ) do
+          {:ok, %Postgrex.Result{columns: columns, rows: rows}} when rows != [] ->
+            unique_index =
+              rows
+              |> List.first()
+              |> Enum.zip(columns)
+              |> Enum.find(fn {_r, c} -> c == "indexname" end)
+              |> elem(0)
+
+            {:error,
+             """
+               Unique index '#{unique_index}' found on table '#{table}'.
+               #{module_name} is not compatible with tables that have a unique index.
+               Please remove this index if you want to use #{module_name}.
+             """}
+
+          _ ->
+            :ok
+        end
       end
 
       defoverridable Alog

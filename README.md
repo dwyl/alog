@@ -32,5 +32,19 @@ This module provides some helper functions to make it easy to insert and retriev
   end
   ```
 
+  ## Repo
+  
   Alog expects your `Repo` to belong to the same base module as the schema.
   So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
+
+  ## Indexes
+
+  Due to the append only manner in which Alog stores data, it is not compatible with tables that have Unique Indexes applied to any of their columns. If you wish to use alog, you will have to remove these indexes.
+
+  For example, the following in a migration file would remove a unique index on the `email` column from the `users` table.
+
+  ```
+  drop(unique_index(:users, :email))
+  ```
+
+  See https://hexdocs.pm/ecto_sql/Ecto.Migration.html#content for more details.
