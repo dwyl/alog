@@ -37,7 +37,7 @@ This module provides some helper functions to make it easy to insert and retriev
   Alog expects your `Repo` to belong to the same base module as the schema.
   So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
 
-  ## Indexes
+  ## Uniqueness
 
   Due to the append only manner in which Alog stores data, it is not compatible with tables that have Unique Indexes applied to any of their columns. If you wish to use alog, you will have to remove these indexes.
 
@@ -48,3 +48,5 @@ This module provides some helper functions to make it easy to insert and retriev
   ```
 
   See https://hexdocs.pm/ecto_sql/Ecto.Migration.html#content for more details.
+
+  If you want to ensure each entry in your database has a unique field, you can use the [`Ecto.Changeset.unique_constraint/3`](https://hexdocs.pm/ecto/Ecto.Changeset.html#unique_constraint/3) function as normal, and Alog will ensure there are no repeated fields, other than those of the same entry, returning an invalid changeset if there are.
