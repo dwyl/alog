@@ -179,6 +179,7 @@ defmodule Alog do
               |> Map.put(:updated_at, nil)
 
             changeset
+            |> apply_constraints()
             |> Map.put(:data, data)
             |> @repo.insert()
 
