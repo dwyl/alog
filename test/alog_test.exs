@@ -61,4 +61,14 @@ defmodule AlogTest do
               end).()
     end
   end
+
+  describe "Not compatible with unique index" do
+    test "Throws error if unique index exists" do
+      assert_raise RuntimeError, fn ->
+        %Alog.TestApp.Unique{}
+        |> Alog.TestApp.Unique.changeset(%{name: "unique item"})
+        |> Alog.TestApp.Unique.insert()
+      end
+    end
+  end
 end

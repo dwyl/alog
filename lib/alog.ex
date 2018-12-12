@@ -101,9 +101,16 @@ defmodule Alog do
           |> User.insert()
       """
       def insert(struct_or_changeset) do
-        struct_or_changeset
-        |> insert_entry_id()
-        |> @repo.insert()
+        case check_for_unique_index() do
+          :ok ->
+            struct_or_changeset
+            |> insert_entry_id()
+            |> apply_constraints()
+            |> @repo.insert()
+
+          {:error, msg} ->
+            raise msg
+        end
       end
 
       @doc """
@@ -161,17 +168,24 @@ defmodule Alog do
           |> User.update()
       """
       def update(%Ecto.Changeset{} = changeset) do
-        data =
-          changeset
-          |> Map.get(:data)
-          |> @repo.preload(__MODULE__.__schema__(:associations))
-          |> Map.put(:id, nil)
-          |> Map.put(:inserted_at, nil)
-          |> Map.put(:updated_at, nil)
+        case check_for_unique_index() do
+          :ok ->
+            data =
+              changeset
+              |> Map.get(:data)
+              |> @repo.preload(__MODULE__.__schema__(:associations))
+              |> Map.put(:id, nil)
+              |> Map.put(:inserted_at, nil)
+              |> Map.put(:updated_at, nil)
 
-        changeset
-        |> Map.put(:data, data)
-        |> @repo.insert()
+            changeset
+            |> apply_constraints()
+            |> Map.put(:data, data)
+            |> @repo.insert()
+
+          {:error, msg} ->
+            raise msg
+        end
       end
 
       def update(_) do
@@ -266,6 +280,22 @@ defmodule Alog do
         @repo.preload(item, [{assoc, preload_query(assoc)}])
       end
 
+      defp apply_constraints(%Ecto.Changeset{} = changeset) do
+        changeset
+        |> Map.get(:constraints)
+        |> Enum.reduce(changeset, fn con, acc ->
+          with :unique <- con.type,
+               change when not is_nil(change) <- Map.get(changeset.changes, con.field),
+               existing when not is_nil(existing) <- __MODULE__.get_by([{con.field, change}]) do
+            Ecto.Changeset.add_error(acc, con.field, Map.get(con, :error) |> elem(0))
+          else
+            _ -> acc
+          end
+        end)
+      end
+
+      defp apply_constraints(struct), do: struct
+
       defp preload_map(assoc, owner) do
         case assoc do
           {k, v} ->
@@ -324,6 +354,34 @@ defmodule Alog do
             acc
           end
         end)
+      end
+
+      defp check_for_unique_index() do
+        table = __MODULE__.__schema__(:source)
+        "Elixir." <> module_name = unquote(__MODULE__) |> to_string()
+
+        case @repo.query(
+               "SELECT * FROM pg_indexes WHERE tablename = $1 and indexname NOT LIKE '%_pkey' AND indexdef LIKE 'CREATE UNIQUE INDEX%';",
+               [table]
+             ) do
+          {:ok, %Postgrex.Result{columns: columns, rows: rows}} when rows != [] ->
+            unique_index =
+              rows
+              |> List.first()
+              |> Enum.zip(columns)
+              |> Enum.find(fn {_r, c} -> c == "indexname" end)
+              |> elem(0)
+
+            {:error,
+             """
+               Unique index '#{unique_index}' found on table '#{table}'.
+               #{module_name} is not compatible with tables that have a unique index.
+               Please remove this index if you want to use #{module_name}.
+             """}
+
+          _ ->
+            :ok
+        end
       end
 
       defoverridable Alog
