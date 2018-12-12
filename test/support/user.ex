@@ -20,6 +20,7 @@ defmodule Alog.TestApp.User do
     user
     |> cast(attrs, [:name, :username, :postcode, :deleted])
     |> validate_required([:name, :username, :postcode])
+    |> unique_constraint(:username)
   end
 
   def user_and_item_changeset(user, attrs) do

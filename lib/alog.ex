@@ -105,6 +105,7 @@ defmodule Alog do
           :ok ->
             struct_or_changeset
             |> insert_entry_id()
+            |> apply_constraints()
             |> @repo.insert()
 
           {:error, msg} ->
@@ -277,6 +278,22 @@ defmodule Alog do
       def preload(item, assoc) do
         @repo.preload(item, [{assoc, preload_query(assoc)}])
       end
+
+      defp apply_constraints(%Ecto.Changeset{} = changeset) do
+        changeset
+        |> Map.get(:constraints)
+        |> Enum.reduce(changeset, fn con, acc ->
+          with :unique <- con.type,
+               change when not is_nil(change) <- Map.get(changeset.changes, con.field),
+               existing when not is_nil(existing) <- __MODULE__.get_by([{con.field, change}]) do
+            Ecto.Changeset.add_error(acc, con.field, Map.get(con, :error) |> elem(0))
+          else
+            _ -> acc
+          end
+        end)
+      end
+
+      defp apply_constraints(struct), do: struct
 
       defp preload_map(assoc, owner) do
         case assoc do
