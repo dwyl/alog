@@ -41,7 +41,7 @@ defmodule Alog do
   @callback insert(Ecto.Schema.t() | Ecto.Changeset.t()) ::
               {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback get(String.t()) :: Ecto.Schema.t() | nil | no_return()
-  @callback get_by(Keyword.t() | map()) :: Ecto.Schema.t() | nil | no_return()
+  @callback get_by(Keyword.t() | map(), Keyword.t()) :: Ecto.Schema.t() | nil | no_return()
   @callback update(Ecto.Changeset.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback get_history(Ecto.Schema.t()) :: [Ecto.Schema.t()] | no_return()
   @callback delete(Ecto.Schema.t() | Ecto.Changeset.t()) ::
@@ -139,13 +139,39 @@ defmodule Alog do
 
           User.get_by(username: "admin")
           User.get_by(first_name: "Charlie", age: 27)
+
+      ## Options
+
+          - :case_insensitive (boolean) - whether your query should be case insensitive. Defaults to `false`.
+
+      If using the `:case_insensitive` option, you should consider adding a lowercase index to your table,
+      as it will significantly increase the query speed. For example:
+
+          `create index("users", ["(lower(first_name))"], first_name: :users_lower_first_name_index)`
+
+      See https://hexdocs.pm/ecto_sql/Ecto.Migration.html#index/3 for more details.
+
+      If passing options, make sure your clauses are wrapped in square brackets, or passed as a map:
+
+          User.get([first_name: "charlie"], case_insensitive: true)
+          User.get(%{first_name: "charlie"}, case_insensitive: true)
       """
-      def get_by(clauses) do
+      def get_by(clauses, opts \\ []) do
         sub =
           __MODULE__
           |> (fn q ->
                 Enum.reduce(clauses, q, fn {key, value}, q ->
-                  q |> where([m], field(m, ^key) == ^value)
+                  case Keyword.get(opts, :case_insensitive) do
+                    true ->
+                      q
+                      |> where(
+                        [m],
+                        fragment("lower(?)", field(m, ^key)) == ^String.downcase(value)
+                      )
+
+                    _ ->
+                      q |> where([m], field(m, ^key) == ^value)
+                  end
                 end)
               end).()
           |> order_by([m], desc: m.inserted_at)
