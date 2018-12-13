@@ -21,5 +21,19 @@ defmodule AlogTest.GetByTest do
 
       assert User.get_by(postcode: "E2 0SY", name: "Thor") == user
     end
+
+    test "works with map params " do
+      {:ok, user} = %User{} |> User.changeset(Helpers.user_1_params()) |> User.insert()
+
+      assert User.get_by(%{postcode: "E2 0SY", name: "Thor"}) == user
+    end
+
+    test "case_insensitive option" do
+      {:ok, user} = %User{} |> User.changeset(Helpers.user_1_params()) |> User.insert()
+
+      refute User.get_by(name: "thor") == user
+      assert User.get_by([name: "thor"], case_insensitive: true) == user
+      assert User.get_by(%{name: "thor"}, case_insensitive: true) == user
+    end
   end
 end
