@@ -175,12 +175,15 @@ defmodule Alog do
                 end)
               end).()
           |> order_by([m], desc: m.inserted_at)
-          |> limit([m], 1)
+          |> distinct([m], m.entry_id)
           |> select([m], m)
 
         query = from(m in subquery(sub), where: not m.deleted, select: m)
 
-        item = @repo.one(query)
+        query
+        |> @repo.all
+        |> Enum.filter(fn item -> item && __MODULE__.get(item.entry_id) == item end)
+        |> List.last()
       end
 
       @doc """
