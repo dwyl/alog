@@ -61,7 +61,7 @@ defmodule Alog do
       import Ecto.Query
       import Ecto.Query.API, only: [field: 2]
 
-      @repo __MODULE__ |> Module.split() |> List.first() |> Module.concat("Repo")
+      @repo apply(unquote(__MODULE__), :get_repo, [__MODULE__])
 
       if not Map.has_key?(%__MODULE__{}, :deleted) || not is_boolean(%__MODULE__{}.deleted) do
         raise """
@@ -414,6 +414,18 @@ defmodule Alog do
       end
 
       defoverridable Alog
+    end
+  end
+
+  def get_repo(module) do
+    with config when not is_nil(config) <- Application.get_env(:alog, Alog),
+         repo when not is_nil(repo) <- Keyword.get(config, :repo) do
+    else
+      _ ->
+        module
+        |> Module.split()
+        |> List.first()
+        |> Module.concat("Repo")
     end
   end
 end
