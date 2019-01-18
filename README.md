@@ -33,9 +33,16 @@ This module provides some helper functions to make it easy to insert and retriev
   ```
 
   ## Repo
+
+  You can set the repo you want Alog to use in a config file:
+
+  ``` elixir
+ config :alog, Alog,
+    repo: MyApp.Repo
+  ```
   
-  Alog expects your `Repo` to belong to the same base module as the schema.
-  So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
+  If you do not explicitly set a Repo, Alog will try to find it using your application name.
+  So if your app is `MyApp` and your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
 
   ## Uniqueness
 
