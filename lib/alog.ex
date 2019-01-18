@@ -28,8 +28,13 @@ defmodule Alog do
         end
       end
 
-  Alog expects your `Repo` to belong to the same base module as the schema.
-  So if your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
+  You can set the repo you want Alog to use in a config file:
+
+      config :alog, Alog,
+        repo: MyApp.Repo
+
+  If you do not explicitly set a Repo, Alog will try to find it using your application name.
+  So if your app is `MyApp` and your schema is `MyApp.User`, or `MyApp.Accounts.User`, your Repo should be `MyApp.Repo`.
 
   Any schema that uses Alog must include the fields `:deleted` of type `:boolean` and default false,
   and `:entry_id` of type `:string`.
