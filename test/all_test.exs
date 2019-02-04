@@ -14,9 +14,10 @@ defmodule AlogTest.AllTest do
     test "does not include old items" do
       {:ok, user} = %User{} |> User.changeset(Helpers.user_1_params()) |> User.insert()
       {:ok, _} = %User{} |> User.changeset(Helpers.user_2_params()) |> User.insert()
-      {:ok, _} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
+      {:ok, user_updated} = user |> User.changeset(%{postcode: "W2 3EC"}) |> User.update()
 
       assert length(User.all()) == 2
+      assert user.inserted_at == user_updated.inserted_at
     end
   end
 end
