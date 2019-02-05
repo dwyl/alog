@@ -209,7 +209,6 @@ defmodule Alog do
               |> Map.get(:data)
               |> @repo.preload(__MODULE__.__schema__(:associations))
               |> Map.put(:id, nil)
-              |> Map.put(:inserted_at, nil)
               |> Map.put(:updated_at, nil)
 
             changeset
@@ -248,19 +247,6 @@ defmodule Alog do
           User.all()
       """
       def all do
-        # get the oldest items
-        sub =
-          from(m in __MODULE__,
-            distinct: m.entry_id,
-            order_by: [asc: :inserted_at],
-            select: m
-          )
-
-        query = from(m in subquery(sub), where: not m.deleted, select: m)
-
-        oldest_items = @repo.all(query)
-
-        # get the most recent inserted items, ie desc: :inserted_at
         sub =
           from(m in __MODULE__,
             distinct: m.entry_id,
@@ -271,14 +257,6 @@ defmodule Alog do
         query = from(m in subquery(sub), where: not m.deleted, select: m)
 
         @repo.all(query)
-        |> Enum.map(fn(newest_item) ->
-          oldest_item = Enum.find(oldest_items, &(&1.entry_id == newest_item.entry_id))
-          if oldest_item do
-            %{newest_item | inserted_at: oldest_item.inserted_at}
-          else
-            newest_item
-          end
-        end)
       end
 
       @doc """
