@@ -129,7 +129,7 @@ defmodule Alog do
           from(
             m in __MODULE__,
             where: m.entry_id == ^entry_id,
-            order_by: [desc: :inserted_at],
+            order_by: [desc: :updated_at],
             limit: 1,
             select: m
           )
@@ -179,7 +179,7 @@ defmodule Alog do
                   end
                 end)
               end).()
-          |> order_by([m], desc: m.inserted_at)
+          |> order_by([m], desc: m.updated_at)
           |> distinct([m], m.entry_id)
           |> select([m], m)
 
@@ -250,7 +250,7 @@ defmodule Alog do
         sub =
           from(m in __MODULE__,
             distinct: m.entry_id,
-            order_by: [desc: :inserted_at],
+            order_by: [desc: :updated_at],
             select: m
           )
 
@@ -345,7 +345,7 @@ defmodule Alog do
         sub =
           from(mod in Map.get(module.__schema__(:association, assoc), :queryable),
             distinct: mod.entry_id,
-            order_by: [desc: :inserted_at],
+            order_by: [desc: :updated_at],
             select: mod
           )
 
