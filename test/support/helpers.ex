@@ -6,6 +6,8 @@ defmodule Alog.TestApp.Helpers do
 
   def user_2_params(), do: %{name: "Loki", username: "mschfmkr", postcode: "E1 6DR"}
 
+  def user_3_params(), do: %{name: "Bob", username: "bobuser", postcode: "E1 7DR"}
+
   def seed_data() do
     {:ok, item_type} = %ItemType{} |> ItemType.changeset(%{type: "Weapon"}) |> ItemType.insert()
 

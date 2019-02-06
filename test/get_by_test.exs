@@ -38,7 +38,7 @@ defmodule AlogTest.GetByTest do
 
     test "does not retrieve outdated results" do
       {:ok, user} = %User{} |> User.changeset(Helpers.user_1_params()) |> User.insert()
-      {:ok, updated_user} = user |> User.changeset(%{postcode: "EC3 RST"}) |> User.update()
+      {:ok, _updated_user} = user |> User.changeset(%{postcode: "EC3 RST"}) |> User.update()
 
       assert User.get_by(postcode: "E2 0SY") == nil
     end
@@ -58,7 +58,7 @@ defmodule AlogTest.GetByTest do
         |> User.changeset(Map.put(Helpers.user_2_params(), :postcode, "E2 0SY"))
         |> User.insert()
 
-      {:ok, updated_user_2} = user_2 |> User.changeset(%{postcode: "EC3 RST"}) |> User.update()
+      {:ok, _} = user_2 |> User.changeset(%{postcode: "EC3 RST"}) |> User.update()
 
       assert User.get_by(postcode: "E2 0SY") == user
     end
