@@ -27,7 +27,7 @@ defmodule Alog.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto, "~> 2.2.10"},
+      {:ecto_sql, "~> 3.0.5"},
       {:postgrex, ">= 0.0.0"}
     ]
   end
