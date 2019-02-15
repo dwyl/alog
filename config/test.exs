@@ -1,7 +1,6 @@
 use Mix.Config
 
 config :alog, Alog.Repo,
-  adapter: Ecto.Adapters.Postgres,
   username: "postgres",
   password: "postgres",
   database: "test_app_dev",
