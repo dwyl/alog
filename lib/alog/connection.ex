@@ -56,10 +56,9 @@ defmodule Alog.Connection do
     end
   end
 
-  def execute_ddl({:create, %Ecto.Migration.Index{}} = command) do
-  end
-
-  def execute_ddl({:create_if_not_exists, %Ecto.Migration.Index{}} = command) do
+  def execute_ddl({c, %Ecto.Migration.Index{unique: true}})
+      when c in [:create, :create_if_not_exists] do
+    raise ArgumentError, "you cannot create a unique index"
   end
 
   defdelegate execute_ddl(command), to: Ecto.Adapter.Postgres.Connection
