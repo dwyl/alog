@@ -5,34 +5,41 @@ defmodule Alog.Connection do
   defdelegate child_spec(opts), to: Ecto.Adapters.Postgres.Connection
 
   @impl true
-  defdelegate ddl_logs(result), to: Ecto.Adapter.Postgres.Connection
+  defdelegate ddl_logs(result), to: Ecto.Adapters.Postgres.Connection
 
   @impl true
   defdelegate prepare_execute(connection, name, statement, params, options),
-    to: Ecto.Adapter.Postgres.Connection
+    to: Ecto.Adapters.Postgres.Connection
 
   @impl true
-  defdelegate query(connection, statement, params, options), to: Ecto.Adapter.Postgres.Connection
+  defdelegate query(connection, statement, params, options), to: Ecto.Adapters.Postgres.Connection
 
   @impl true
-  defdelegate stream(connection, statement, params, options), to: Ecto.Adapter.Postgres.Connection
+  defdelegate stream(connection, statement, params, options),
+    to: Ecto.Adapters.Postgres.Connection
 
   @impl true
   def execute_ddl({c, %Ecto.Migration.Table{} = table, columns} = command)
       when c in [:create, :create_if_not_exists] do
-    case Enum.any?(
-           columns,
-           fn
-             {:add, field, type, [primary_key: true]} -> true
-             _ -> false
-           end
-         ) do
-      true ->
-        raise ArgumentError, "you cannot add a primary key"
+    # TODO: need to determine if migration_source has been set in config
+    # else name is :schema_migrations
+    with name when name != :schema_migrations <- Map.get(table, :name),
+         true <-
+           Enum.any?(
+             columns,
+             fn
+               {:add, field, type, [primary_key: true]} -> true
+               _ -> false
+             end
+           ) do
+      raise ArgumentError, "you cannot add a primary key"
+    else
+      :schema_migrations ->
+        Ecto.Adapters.Postgres.Connection.execute_ddl({c, table, columns})
 
-      false ->
-        Ecto.Adapter.Postgres.Connection.execute_ddl(
-          {c, table, subcommand ++ [{:add, :cid, "varchar", [primary_key: true]}]}
+      _ ->
+        Ecto.Adapters.Postgres.Connection.execute_ddl(
+          {c, table, columns ++ [{:add, :cid, :varchar, [primary_key: true]}]}
         )
     end
   end
@@ -52,7 +59,7 @@ defmodule Alog.Connection do
                  nil
              end
            ) do
-      Ecto.Adapter.Postgres.Connection.execute_ddl(command)
+      Ecto.Adapters.Postgres.Connection.execute_ddl(command)
     end
   end
 
@@ -61,5 +68,5 @@ defmodule Alog.Connection do
     raise ArgumentError, "you cannot create a unique index"
   end
 
-  defdelegate execute_ddl(command), to: Ecto.Adapter.Postgres.Connection
+  defdelegate execute_ddl(command), to: Ecto.Adapters.Postgres.Connection
 end
