@@ -38,6 +38,22 @@ defmodule Alog.Connection do
   end
 
   def execute_ddl({:alter, %Ecto.Migration.Table{}, changes} = command) do
+    with :ok <-
+           Enum.each(
+             changes,
+             fn
+               {:remove, :cid, _, _} ->
+                 raise ArgumentError, "you cannot remove cid"
+
+               {_, _, _, [primary_key: true]} ->
+                 raise ArgumentError, "you cannot add a primary key"
+
+               _ ->
+                 nil
+             end
+           ) do
+      Ecto.Adapter.Postgres.Connection.execute_ddl(command)
+    end
   end
 
   def execute_ddl({:create, %Ecto.Migration.Index{}} = command) do
