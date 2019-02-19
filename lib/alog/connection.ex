@@ -38,9 +38,7 @@ defmodule Alog.Connection do
         Ecto.Adapters.Postgres.Connection.execute_ddl({c, table, columns})
 
       _ ->
-        Ecto.Adapters.Postgres.Connection.execute_ddl(
-          {c, table, columns ++ [{:add, :cid, :varchar, [primary_key: true]}]}
-        )
+        Ecto.Adapters.Postgres.Connection.execute_ddl({c, table, update_columns(columns)})
     end
   end
 
@@ -69,4 +67,21 @@ defmodule Alog.Connection do
   end
 
   defdelegate execute_ddl(command), to: Ecto.Adapters.Postgres.Connection
+
+  # Add required columns if they are missing
+  defp update_columns(columns) do
+    [
+      {:add, :cid, :string, [primary_key: true]},
+      {:add, :entry_id, :string, []},
+      {:add, :deleted, :boolean, []},
+      {:add, :inserted_at, :naive_datetime_usec, []},
+      {:add, :updated_at, :naive_datetime_usec, []}
+    ]
+    |> Enum.reduce(columns, fn {_, c, _, _} = col, acc ->
+      case Enum.find(acc, fn {_, a, _, _} -> a == c end) do
+        nil -> acc ++ [col]
+        _ -> acc
+      end
+    end)
+  end
 end
