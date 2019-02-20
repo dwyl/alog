@@ -72,10 +72,10 @@ defmodule Alog.Connection do
   defp update_columns(columns) do
     [
       {:add, :cid, :string, [primary_key: true]},
-      {:add, :entry_id, :string, []},
-      {:add, :deleted, :boolean, []},
-      {:add, :inserted_at, :naive_datetime_usec, []},
-      {:add, :updated_at, :naive_datetime_usec, []}
+      {:add, :entry_id, :string, [null: false]},
+      {:add, :deleted, :boolean, [default: false]},
+      {:add, :inserted_at, :naive_datetime_usec, [null: false]},
+      {:add, :updated_at, :naive_datetime_usec, [null: false]}
     ]
     |> Enum.reduce(columns, fn {_, c, _, _} = col, acc ->
       case Enum.find(acc, fn {_, a, _, _} -> a == c end) do
@@ -84,4 +84,18 @@ defmodule Alog.Connection do
       end
     end)
   end
+
+  # Temporary delegate functions to make tests work
+
+  @impl true
+  defdelegate all(a), to: Ecto.Adapters.Postgres.Connection
+
+  @impl true
+  defdelegate insert(a, b, c, d, e, f), to: Ecto.Adapters.Postgres.Connection
+
+  @impl true
+  defdelegate execute(a, b, c, d), to: Ecto.Adapters.Postgres.Connection
+
+  @impl true
+  defdelegate delete_all(a), to: Ecto.Adapters.Postgres.Connection
 end
