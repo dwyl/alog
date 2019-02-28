@@ -71,7 +71,7 @@ defmodule Alog.Connection do
   # Add required columns if they are missing
   defp update_columns(columns) do
     [
-      {:add, :cid, :string, [primary_key: true]},
+      {:add, :cid, :binary, [primary_key: true]},
       {:add, :entry_id, :string, [null: false]},
       {:add, :deleted, :boolean, [default: false]},
       {:add, :inserted_at, :naive_datetime_usec, [null: false]},
@@ -98,4 +98,10 @@ defmodule Alog.Connection do
 
   @impl true
   defdelegate delete_all(a), to: Ecto.Adapters.Postgres.Connection
+
+  @impl true
+  defdelegate to_constraints(a), to: Ecto.Adapters.Postgres.Connection
+
+  @impl true
+  defdelegate update(a, b, c, d, e), to: Ecto.Adapters.Postgres.Connection
 end
