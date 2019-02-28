@@ -1,22 +1,44 @@
 defmodule Alog.Connection do
+  alias Ecto.Adapters.Postgres.Connection, as: EAPC
+
   @behaviour Ecto.Adapters.SQL.Connection
+  @default_port 5432
 
   @impl true
-  defdelegate child_spec(opts), to: Ecto.Adapters.Postgres.Connection
+  def child_spec(opts) do
+    opts
+    |> Keyword.put_new(:port, @default_port)
+    |> Postgrex.child_spec()
+  end
 
   @impl true
-  defdelegate ddl_logs(result), to: Ecto.Adapters.Postgres.Connection
+  defdelegate prepare_execute(conn, name, statement, params, opts), to: EAPC
+
+  @impl true
+  defdelegate execute(conn, query, params, opts), to: EAPC
+
+  @impl true
+  defdelegate query(conn, statement, params, opts), to: EAPC
+
+  @impl true
+  defdelegate stream(conn, statement, params, opts), to: EAPC
+
+  @impl true
+  defdelegate to_constraints(error_struct), to: EAPC
+
+  @impl true
+  defdelegate ddl_logs(result), to: EAPC
 
   @impl true
   defdelegate prepare_execute(connection, name, statement, params, options),
-    to: Ecto.Adapters.Postgres.Connection
+    to: EAPC
 
   @impl true
-  defdelegate query(connection, statement, params, options), to: Ecto.Adapters.Postgres.Connection
+  defdelegate query(connection, statement, params, options), to: EAPC
 
   @impl true
   defdelegate stream(connection, statement, params, options),
-    to: Ecto.Adapters.Postgres.Connection
+    to: EAPC
 
   @impl true
   def execute_ddl({c, %Ecto.Migration.Table{} = table, columns} = command)
@@ -35,10 +57,10 @@ defmodule Alog.Connection do
       raise ArgumentError, "you cannot add a primary key"
     else
       :schema_migrations ->
-        Ecto.Adapters.Postgres.Connection.execute_ddl({c, table, columns})
+        EAPC.execute_ddl({c, table, columns})
 
       _ ->
-        Ecto.Adapters.Postgres.Connection.execute_ddl({c, table, update_columns(columns)})
+        EAPC.execute_ddl({c, table, update_columns(columns)})
     end
   end
 
@@ -57,7 +79,7 @@ defmodule Alog.Connection do
                  nil
              end
            ) do
-      Ecto.Adapters.Postgres.Connection.execute_ddl(command)
+      EAPC.execute_ddl(command)
     end
   end
 
@@ -66,7 +88,7 @@ defmodule Alog.Connection do
     raise ArgumentError, "you cannot create a unique index"
   end
 
-  defdelegate execute_ddl(command), to: Ecto.Adapters.Postgres.Connection
+  defdelegate execute_ddl(command), to: EAPC
 
   # Add required columns if they are missing
   defp update_columns(columns) do
@@ -88,20 +110,20 @@ defmodule Alog.Connection do
   # Temporary delegate functions to make tests work
 
   @impl true
-  defdelegate all(a), to: Ecto.Adapters.Postgres.Connection
+  defdelegate all(query), to: EAPC
 
   @impl true
-  defdelegate insert(a, b, c, d, e, f), to: Ecto.Adapters.Postgres.Connection
+  defdelegate insert(prefix, table, header, rows, on_conflict, returning), to: EAPC
 
   @impl true
-  defdelegate execute(a, b, c, d), to: Ecto.Adapters.Postgres.Connection
+  defdelegate delete_all(query), to: EAPC
 
   @impl true
-  defdelegate delete_all(a), to: Ecto.Adapters.Postgres.Connection
+  defdelegate update(prefix, table, fields, filters, returning), to: EAPC
 
   @impl true
-  defdelegate to_constraints(a), to: Ecto.Adapters.Postgres.Connection
+  defdelegate delete(prefix, table, filters, returning), to: EAPC
 
   @impl true
-  defdelegate update(a, b, c, d, e), to: Ecto.Adapters.Postgres.Connection
+  defdelegate update_all(query, prefix \\ nil), to: EAPC
 end
