@@ -12,10 +12,10 @@ defmodule Alog.Connection do
   end
 
   @impl true
-  defdelegate ddl_logs(result), to: EAPC
+  defdelegate prepare_execute(conn, name, statement, params, opts), to: EAPC
 
   @impl true
-  defdelegate prepare_execute(conn, name, statement, params, opts), to: EAPC
+  defdelegate execute(conn, query, params, opts), to: EAPC
 
   @impl true
   defdelegate query(conn, statement, params, opts), to: EAPC
@@ -25,9 +25,6 @@ defmodule Alog.Connection do
 
   @impl true
   defdelegate to_constraints(error_struct), to: EAPC
-
-  @impl true
-  defdelegate execute(conn, query, params, opts), to: EAPC
 
   @impl true
   defdelegate all(query), to: EAPC
@@ -49,4 +46,7 @@ defmodule Alog.Connection do
 
   @impl true
   defdelegate execute_ddl(arg), to: EAPC
+
+  @impl true
+  defdelegate ddl_logs(result), to: EAPC
 end
