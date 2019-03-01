@@ -18,12 +18,6 @@ defmodule Alog do
   @impl true
   defdelegate storage_down(opts), to: EAP
 
-  @impl true
-  defdelegate structure_dump(default, config), to: EAP
-
-  @impl true
-  defdelegate structure_load(default, config), to: EAP
-
   # overrides insert/6 defined in Ecto.Adapters.SQL
   def insert(adapter_meta, %{source: source, prefix: prefix}, params, on_conflict, returning, opts) do
     # converts params from a keyword list to a map
