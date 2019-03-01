@@ -3,8 +3,6 @@ defmodule Alog.TestApp.Application do
   use Application
 
   def start(_type, _args) do
-    import Supervisor.Spec
-
     opts = [strategy: :one_for_one, name: Alog.TestApp.Supervisor]
 
     Supervisor.start_link([Alog.Repo], opts)
