@@ -2,7 +2,7 @@ defmodule Alog.TestApp.Comment do
   use Ecto.Schema
   import Ecto.Changeset
 
-  # I'd imagine we'll change string as the type but
+  # I'd imagine we'll change string as the type
   @primary_key {:cid, :string, autogenerate: false}
   schema "comments" do
     field(:entry_id, :string)

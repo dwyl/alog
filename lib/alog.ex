@@ -19,6 +19,10 @@ defmodule Alog do
   defdelegate storage_down(opts), to: EAP
 
   # overrides insert/6 defined in Ecto.Adapters.SQL
+  def insert(adapter_meta, %{source: "schema_migrations", prefix: prefix}, params, on_conflict, returning, opts) do
+    insert_logic(adapter_meta, "schema_migrations", prefix, params, on_conflict, returning, opts)
+  end
+
   def insert(adapter_meta, %{source: source, prefix: prefix}, params, on_conflict, returning, opts) do
     # converts params from a keyword list to a map
     params_map = Enum.into(params, %{})
@@ -41,10 +45,7 @@ defmodule Alog do
       |> Map.put(:entry_id, entry_id)
       |> Enum.into([])
 
-    {kind, conflict_params, _} = on_conflict
-    {fields, values} = :lists.unzip(params)
-    sql = @conn.insert(prefix, source, fields, [fields], on_conflict, returning)
-    Ecto.Adapters.SQL.struct(adapter_meta, @conn, sql, :insert, source, [], values ++ conflict_params, kind, returning, opts)
+    insert_logic(adapter_meta, source, prefix, params, on_conflict, returning, opts)
   end
 
   # I think that this step need to also make sure that the data is not an exact copy.
@@ -69,5 +70,12 @@ defmodule Alog do
     |> Enum.into(%{})
     |> Map.put_new(:inserted_at, NaiveDateTime.utc_now())
     |> Map.put_new(:updated_at, NaiveDateTime.utc_now())
+  end
+
+  defp insert_logic(adapter_meta, source, prefix, params, on_conflict, returning, opts) do
+    {kind, conflict_params, _} = on_conflict
+    {fields, values} = :lists.unzip(params)
+    sql = @conn.insert(prefix, source, fields, [fields], on_conflict, returning)
+    Ecto.Adapters.SQL.struct(adapter_meta, @conn, sql, :insert, source, [], values ++ conflict_params, kind, returning, opts)
   end
 end
