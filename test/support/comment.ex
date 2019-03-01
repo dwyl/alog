@@ -4,7 +4,7 @@ defmodule Alog.TestApp.Comment do
 
   # I'd imagine we'll change string as the type but
   @primary_key {:cid, :string, autogenerate: false}
-  schema "users" do
+  schema "comments" do
     field(:entry_id, :string)
     field(:comment, :string)
     field(:deleted, :boolean, default: false)
