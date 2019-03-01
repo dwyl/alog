@@ -13,5 +13,6 @@ defmodule Alog.TestApp.Comment do
   def changeset(comment_struct, attrs \\ %{}) do
     comment_struct
     |> cast(attrs, [:cid, :entry_id, :comment, :deleted])
+    |> unique_constraint(:cid, name: :comments_pkey)
   end
 end
