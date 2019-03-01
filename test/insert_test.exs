@@ -6,10 +6,24 @@ defmodule AlogTest.InsertTest do
   describe "Repo.insert/2 - with Comment struct:" do
     test "succeeds" do
       Repo.insert(%Comment{comment: "hi"})
-      |> IO.inspect(label: "===> Result of insert")
+      num_comments = Comment |> Repo.all() |> length()
+      assert num_comments == 1
+    end
 
-      Repo.all(Comment)
-      |> IO.inspect(label: "===> All comments (should only be the one)")
+    test "inserting the same comment twice fails with changeset" do
+      Repo.insert(%Comment{comment: "hi"})
+
+      {atom, _changeset} =
+        %Comment{}
+        |> Comment.changeset(%{comment: "hi"})
+        |> Repo.insert()
+
+      assert atom == :error
+    end
+
+    test "inserting the same comment twice fails without changeset" do
+      Repo.insert(%Comment{comment: "hi"})
+      Repo.insert(%Comment{comment: "hi"})
     end
 
     # test "validates required fields" do
