@@ -21,11 +21,6 @@ defmodule AlogTest.InsertTest do
       assert atom == :error
     end
 
-    test "inserting the same comment twice fails without changeset" do
-      Repo.insert(%Comment{comment: "hi"})
-      Repo.insert(%Comment{comment: "hi"})
-    end
-
     # test "validates required fields" do
     #   {:error, changeset} =
     #     %User{}

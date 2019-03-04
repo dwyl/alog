@@ -6,8 +6,8 @@ defmodule Alog.TestApp.Comment do
   @primary_key {:cid, :string, autogenerate: false}
   schema "comments" do
     field(:entry_id, :string)
-    field(:comment, :string)
     field(:deleted, :boolean, default: false)
+    field(:comment, :string)
   end
 
   def changeset(comment_struct, attrs \\ %{}) do

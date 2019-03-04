@@ -7,8 +7,8 @@ defmodule Alog.Repo.Migrations.CreateComments do
       # timestamps are needed in alog but may or may not be in the schema.
       add(:cid, :string, primary_key: true)
       add(:entry_id, :string)
-      add(:comment, :string)
       add(:deleted, :boolean, default: false)
+      add(:comment, :string)
 
       timestamps()
     end
