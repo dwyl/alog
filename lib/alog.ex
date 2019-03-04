@@ -7,8 +7,6 @@ defmodule Alog do
 
   @behaviour Ecto.Adapter.Storage
 
-  # Why did we define our own version of this function?
-  # Sorry if I have missed something that has been explained already.
   @impl true
   def supports_ddl_transaction?, do: true
 
@@ -41,18 +39,13 @@ defmodule Alog do
     params =
       map_for_cid
       |> add_timestamps()
-      |> Map.put(:cid, cid) # <==== Should this be Map.put(:id, cid)??????????
+      |> Map.put(:cid, cid)
       |> Map.put(:entry_id, entry_id)
       |> Enum.into([])
 
     insert_logic(adapter_meta, source, prefix, params, on_conflict, returning, opts)
   end
 
-  # I think that this step need to also make sure that the data is not an exact copy.
-  # if the full cid already exists then this is duplicate data.
-  # Should we insert duplicate data.
-  # i was thinking maybe if it was existing data but not the most recent data we should re-insert the data
-  # e.g. if the comment was hi, edited to hey, and then changed back to hi.
   defp create_entry_id(source, adapter_meta, cid, n) do
     entry_id = String.slice(cid, 0..n)
     entry_id_query = "SELECT * FROM #{source} where entry_id='#{entry_id}'"
