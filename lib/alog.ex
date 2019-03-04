@@ -68,7 +68,7 @@ defmodule Alog do
   defp insert_logic(adapter_meta, source, prefix, params, on_conflict, returning, opts) do
     {kind, conflict_params, _} = on_conflict
     {fields, values} = :lists.unzip(params)
-    sql = @conn.insert(prefix, source, fields, [fields], on_conflict, returning)
-    Ecto.Adapters.SQL.struct(adapter_meta, @conn, sql, :insert, source, [], values ++ conflict_params, kind, returning, opts)
+    sql = Alog.Connection.insert(prefix, source, fields, [fields], on_conflict, returning)
+    Ecto.Adapters.SQL.struct(adapter_meta, Alog.Connection, sql, :insert, source, [], values ++ conflict_params, kind, returning, opts)
   end
 end
