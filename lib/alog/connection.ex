@@ -68,8 +68,29 @@ defmodule Alog.Connection do
     query
   end
 
-  defp distinct_entry_id("SELECT " <> query) do
-    IO.iodata_to_binary(["SELECT ", "DISTINCT ON (\"entry_id\" ) ", query])
+  # defp distinct_entry_id("SELECT " <> fields <> " FROM " <> table_name <> " AS " <> table_as <> " " <> rest_query) do
+  #
+  #   IO.iodata_to_binary(["SELECT ", "DISTINCT ON (#{table_as}\".entry_id\" ) ", query])
+  # end
+
+  defp distinct_entry_id(query) do
+    query_data = get_query_data(query)
+    if (query_data["table_name"] == "\"schema_migrations\"") do
+      query
+    else
+      IO.iodata_to_binary(
+      [ "SELECT DISTINCT ON (#{query_data["table_as"]}.\"entry_id\" ) ",
+        query_data["fields"],
+        " FROM ",
+        query_data["table_name"], " AS ", query_data["table_as"],
+        query_data["rest_query"]
+    ]
+    )
+    end
+  end
+
+  defp get_query_data(query) do
+    Regex.named_captures(~r/(\bSELECT\b)\s(?<fields>.*)\sFROM\s(?<table_name>.*)\sas\s(?<table_as>.*)(?<rest_query>.*)/i, query)
   end
 
   @impl true
