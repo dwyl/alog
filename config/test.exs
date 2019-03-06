@@ -2,8 +2,8 @@ use Mix.Config
 
 config :alog, Alog.Repo,
   username: "postgres",
-  password: "docker",
-  database: "routinedb",
+  password: "postgres",
+  database: "test_app_dev",
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox,
   priv: "priv/repo/test_app/"

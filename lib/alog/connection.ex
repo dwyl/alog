@@ -83,7 +83,8 @@ defmodule Alog.Connection do
         query_data["fields"],
         " FROM ",
         query_data["table_name"], " AS ", query_data["table_as"],
-        query_data["rest_query"]
+        query_data["rest_query"],
+        " ORDER BY #{query_data["table_as"]}.\"entry_id\", #{query_data["table_as"]}.\"inserted_at\" DESC", 
     ]
     )
     end
