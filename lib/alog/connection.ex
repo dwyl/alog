@@ -30,68 +30,48 @@ defmodule Alog.Connection do
   def all(query) do
     iodata_query =  EAPC.all(query)
 
-    # sub =
-    #   from(m in __MODULE__,
-    #     distinct: m.entry_id,
-    #     order_by: [desc: :updated_at],
-    #     select: m
-    #   )
-    #
-    # query = from(m in subquery(sub), where: not m.deleted, select: m)
-
-
-# SELECT
-#   s0."id",
-#   s0."name",
-#   s0."entry_id",
-#   s0."deleted",
-#   s0."inserted_at",
-#   s0."updated_at"
-# FROM
-#   (SELECT DISTINCT ON (d0."entry_id")
-#       d0."id" AS "id"
-#     , d0."name" AS "name"
-#     , d0."entry_id" AS "entry_id"
-#     , d0."deleted" AS "deleted"
-#     , d0."inserted_at" AS "inserted_at"
-#     , d0."updated_at" AS "updated_at"
-#   FROM "drink_types" AS d0
-#   ORDER BY d0."entry_id", d0."updated_at" DESC)
-# AS s0 WHERE (NOT (s0."deleted"))
-
-
     query = iodata_query
     |> IO.iodata_to_binary()
     |> distinct_entry_id()
 
-    IO.inspect query
     query
   end
-
-  # defp distinct_entry_id("SELECT " <> fields <> " FROM " <> table_name <> " AS " <> table_as <> " " <> rest_query) do
-  #
-  #   IO.iodata_to_binary(["SELECT ", "DISTINCT ON (#{table_as}\".entry_id\" ) ", query])
-  # end
 
   defp distinct_entry_id(query) do
     query_data = get_query_data(query)
     if (query_data["table_name"] == "\"schema_migrations\"") do
       query
     else
+      subquery = IO.iodata_to_binary(
+                  [ "SELECT DISTINCT ON (#{query_data["table_as"]}.\"entry_id\" ) ",
+                    query_data["subquery_fields"], ", #{query_data["table_as"]}.\"deleted\" AS \"delted\"",
+                    " FROM ",
+                    query_data["table_name"], " AS ", query_data["table_as"],
+                    query_data["rest_query"],
+                    " ORDER BY #{query_data["table_as"]}.\"entry_id\", #{query_data["table_as"]}.\"inserted_at\" DESC"
+                ]
+              )
+
       IO.iodata_to_binary(
-      [ "SELECT DISTINCT ON (#{query_data["table_as"]}.\"entry_id\" ) ",
-        query_data["fields"],
-        " FROM ",
-        query_data["table_name"], " AS ", query_data["table_as"],
-        query_data["rest_query"],
-        " ORDER BY #{query_data["table_as"]}.\"entry_id\", #{query_data["table_as"]}.\"inserted_at\" DESC", 
-    ]
-    )
+        ["SELECT ", query_data["field_names"], " FROM (", subquery, ") AS alogsubquery WHERE (NOT alogsubquery.\"deleted\")"]
+      )
+
     end
   end
 
   defp get_query_data(query) do
-    Regex.named_captures(~r/(\bSELECT\b)\s(?<fields>.*)\sFROM\s(?<table_name>.*)\sas\s(?<table_as>.*)(?<rest_query>.*)/i, query)
+    data = Regex.named_captures(~r/(\bSELECT\b)\s(?<fields>.*)\sFROM\s(?<table_name>.*)\sas\s(?<table_as>.*)(?<rest_query>.*)/i, query)
+    data = Map.put(data, "field_names", Regex.replace(~r/#{data["table_as"]}/, data["fields"], "alogsubquery"))
+
+    subquery_fields = data["fields"]
+      |> String.split(",")
+      |> Enum.map(fn f ->
+        field_name = Regex.replace(~r/#{data["table_as"]}./, f, "")
+        f <> " AS #{field_name}"
+      end)
+      |> Enum.join(", ")
+
+    Map.put(data, "subquery_fields", subquery_fields)
   end
 
   @impl true
