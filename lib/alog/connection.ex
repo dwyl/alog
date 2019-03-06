@@ -27,7 +27,50 @@ defmodule Alog.Connection do
   defdelegate to_constraints(error_struct), to: EAPC
 
   @impl true
-  defdelegate all(query), to: EAPC
+  def all(query) do
+    iodata_query =  EAPC.all(query)
+
+    # sub =
+    #   from(m in __MODULE__,
+    #     distinct: m.entry_id,
+    #     order_by: [desc: :updated_at],
+    #     select: m
+    #   )
+    #
+    # query = from(m in subquery(sub), where: not m.deleted, select: m)
+
+
+# SELECT
+#   s0."id",
+#   s0."name",
+#   s0."entry_id",
+#   s0."deleted",
+#   s0."inserted_at",
+#   s0."updated_at"
+# FROM
+#   (SELECT DISTINCT ON (d0."entry_id")
+#       d0."id" AS "id"
+#     , d0."name" AS "name"
+#     , d0."entry_id" AS "entry_id"
+#     , d0."deleted" AS "deleted"
+#     , d0."inserted_at" AS "inserted_at"
+#     , d0."updated_at" AS "updated_at"
+#   FROM "drink_types" AS d0
+#   ORDER BY d0."entry_id", d0."updated_at" DESC)
+# AS s0 WHERE (NOT (s0."deleted"))
+
+
+    query = iodata_query
+    |> IO.iodata_to_binary()
+    |> distinct_entry_id()
+
+    IO.inspect query
+    query
+  end
+
+  defp distinct_entry_id("SELECT " <> query) do
+    IO.iodata_to_binary(["SELECT ", "DISTINCT ON (\"entry_id\" ) ", query])
+  end
 
   @impl true
   defdelegate update_all(query, prefix \\ nil), to: EAPC
