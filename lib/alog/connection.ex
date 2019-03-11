@@ -44,7 +44,7 @@ defmodule Alog.Connection do
     else
       subquery = IO.iodata_to_binary(
                   [ "SELECT DISTINCT ON (#{query_data["table_as"]}.\"entry_id\" ) ",
-                    query_data["subquery_fields"], ", #{query_data["table_as"]}.\"deleted\" AS \"delted\"",
+                    query_data["subquery_fields"], ", #{query_data["table_as"]}.\"deleted\" AS \"deleted\"",
                     " FROM ",
                     query_data["table_name"], " AS ", query_data["table_as"],
                     query_data["rest_query"],
