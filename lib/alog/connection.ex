@@ -30,18 +30,7 @@ defmodule Alog.Connection do
   defdelegate ddl_logs(result), to: EAPC
 
   @impl true
-  defdelegate prepare_execute(connection, name, statement, params, options),
-    to: EAPC
-
-  @impl true
-  defdelegate query(connection, statement, params, options), to: EAPC
-
-  @impl true
-  defdelegate stream(connection, statement, params, options),
-    to: EAPC
-
-  @impl true
-  def execute_ddl({c, %Ecto.Migration.Table{} = table, columns} = command)
+  def execute_ddl({c, %Ecto.Migration.Table{} = table, columns})
       when c in [:create, :create_if_not_exists] do
     # TODO: need to determine if migration_source has been set in config
     # else name is :schema_migrations
@@ -50,7 +39,7 @@ defmodule Alog.Connection do
            Enum.any?(
              columns,
              fn
-               {:add, field, type, [primary_key: true]} -> true
+               {:add, field, _type, [primary_key: true]} when field != :cid -> true
                _ -> false
              end
            ) do
