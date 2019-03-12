@@ -32,19 +32,23 @@ defmodule Alog.Connection do
 
     query = iodata_query
     |> IO.iodata_to_binary()
-    |> distinct_entry_id()
+    |> alogify_all_query()
 
     query
   end
 
-  defp distinct_entry_id(query) do
+  defp alogify_all_query(query) do
     query_data = get_query_data(query)
+    # if all query is called during migration, some column used in the
+    # alogify version might not be yet defined.
+    # Return the "normal" query
     if (query_data["table_name"] == "\"schema_migrations\"") do
       query
     else
       subquery = IO.iodata_to_binary(
                   [ "SELECT DISTINCT ON (#{query_data["table_as"]}.\"entry_id\" ) ",
-                    query_data["subquery_fields"], ", #{query_data["table_as"]}.\"deleted\" AS \"deleted\"",
+                    query_data["subquery_fields"],
+                    get_deleted_field(query_data),
                     " FROM ",
                     query_data["table_name"], " AS ", query_data["table_as"],
                     query_data["rest_query"],
@@ -55,7 +59,6 @@ defmodule Alog.Connection do
       IO.iodata_to_binary(
         ["SELECT ", query_data["field_names"], " FROM (", subquery, ") AS alogsubquery WHERE (NOT alogsubquery.\"deleted\")"]
       )
-
     end
   end
 
@@ -72,6 +75,14 @@ defmodule Alog.Connection do
       |> Enum.join(", ")
 
     Map.put(data, "subquery_fields", subquery_fields)
+  end
+
+  defp get_deleted_field(query_data) do
+    if String.contains?(query_data["subquery_fields"], "#{query_data["table_as"]}.\"deleted\"") do
+      ""
+    else
+      ", #{query_data["table_as"]}.\"deleted\" AS \"deleted\""
+    end
   end
 
   @impl true
