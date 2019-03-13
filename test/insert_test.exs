@@ -36,6 +36,7 @@ defmodule AlogTest.InsertTest do
     #   assert User.get(user.entry_id) == user
     # end
   end
+
   #
   # describe "insert/1 - with struct:" do
   #   test "succeeds" do

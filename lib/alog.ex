@@ -6,6 +6,7 @@ defmodule Alog do
   alias Ecto.Adapters.Postgres, as: EAP
 
   @behaviour Ecto.Adapter.Storage
+  @behaviour Ecto.Adapter.Schema
 
   @impl true
   def supports_ddl_transaction?, do: true
@@ -16,12 +17,76 @@ defmodule Alog do
   @impl true
   defdelegate storage_down(opts), to: EAP
 
+  @impl true
+  defdelegate structure_dump(default, config), to: EAP
+
+  @impl true
+  defdelegate structure_load(default, config), to: EAP
+
+  @impl true
+  def update(adapter_meta, %{source: source, prefix: prefix}, fields, params, returning, opts) do
+    cid = Keyword.get(params, :cid)
+    query = "SELECT * FROM #{source} where cid='#{cid}'"
+    {:ok, old} = Ecto.Adapters.SQL.query(adapter_meta, query, [])
+
+    new_params =
+      Enum.with_index(old.columns)
+      |> Enum.map(fn {c, i} ->
+        case Keyword.get(fields, String.to_existing_atom(c)) do
+          _ when c == "cid" ->
+            nil
+
+          nil ->
+            {String.to_existing_atom(c), old.rows |> List.first() |> Enum.at(i)}
+
+          new ->
+            {String.to_existing_atom(c), new}
+        end
+      end)
+      |> Enum.filter(&(not is_nil(&1)))
+      |> Keyword.new()
+
+    insert(
+      adapter_meta,
+      %{source: source, prefix: prefix},
+      new_params,
+      {:raise, [], []},
+      returning,
+      opts
+    )
+  end
+
+  @impl true
+  def autogenerate(:binary_id), do: nil
+
+  @impl true
+  def loaders(:binary_id, type), do: [:binary, type]
+  def loaders(_primitive, type), do: [type]
+
+  @impl true
+  def dumpers(:binary_id, type), do: [:binary, type]
+  def dumpers(_primitive, type), do: [type]
+
   # overrides insert/6 defined in Ecto.Adapters.SQL
-  def insert(adapter_meta, %{source: "schema_migrations", prefix: prefix}, params, on_conflict, returning, opts) do
+  def insert(
+        adapter_meta,
+        %{source: "schema_migrations", prefix: prefix},
+        params,
+        on_conflict,
+        returning,
+        opts
+      ) do
     insert_logic(adapter_meta, "schema_migrations", prefix, params, on_conflict, returning, opts)
   end
 
-  def insert(adapter_meta, %{source: source, prefix: prefix}, params, on_conflict, returning, opts) do
+  def insert(
+        adapter_meta,
+        %{source: source, prefix: prefix},
+        params,
+        on_conflict,
+        returning,
+        opts
+      ) do
     # converts params from a keyword list to a map
     params_map = Enum.into(params, %{})
 
@@ -54,7 +119,7 @@ defmodule Alog do
     if results.num_rows == 0 do
       entry_id
     else
-      create_entry_id(source, adapter_meta, cid, n+1)
+      create_entry_id(source, adapter_meta, cid, n + 1)
     end
   end
 
@@ -69,6 +134,18 @@ defmodule Alog do
     {kind, conflict_params, _} = on_conflict
     {fields, values} = :lists.unzip(params)
     sql = Alog.Connection.insert(prefix, source, fields, [fields], on_conflict, returning)
-    Ecto.Adapters.SQL.struct(adapter_meta, Alog.Connection, sql, :insert, source, [], values ++ conflict_params, kind, returning, opts)
+
+    Ecto.Adapters.SQL.struct(
+      adapter_meta,
+      Alog.Connection,
+      sql,
+      :insert,
+      source,
+      [],
+      values ++ conflict_params,
+      kind,
+      returning,
+      opts
+    )
   end
 end
